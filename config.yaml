@@ -1,0 +1,14 @@
+name: "OpenWeather"
+description: "Uses API key and connects to OpenWeather"
+icon: "assets/icon.png"
+
+auth:
+  type: cred
+  credentials:
+    - name: "api_key"
+      label: "OpenWeather API Key"
+      placeholder: "b2e....."
+      secret: true
+tools:
+  - name: "example_tool"
+    description: "Example tool demonstrating credential usage"
