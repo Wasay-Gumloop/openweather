@@ -94,10 +94,18 @@ async def get_current_weather(
     atmospheric pressure, visibility, and weather conditions.
     """
     creds = await get_credentials()
-    api_key = creds.get("api_key", "")
+    logger.info("Credentials received: %s", {k: f"{v[:8]}..." if v else "empty" for k, v in creds.items()})
+    
+    # Try multiple possible key names
+    api_key = creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or ""
+    api_key = api_key.strip()  # Remove any whitespace
 
     if not api_key:
-        raise ValueError("OpenWeather API key not configured")
+        raise ValueError(
+            f"OpenWeather API key not configured. Received credential keys: {list(creds.keys())}"
+        )
+
+    logger.info("Using API key: %s...", api_key[:8] if len(api_key) >= 8 else api_key)
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
@@ -110,7 +118,12 @@ async def get_current_weather(
         )
 
         if response.status_code == 401:
-            raise ValueError("Invalid OpenWeather API key")
+            error_body = response.text
+            logger.error("OpenWeather 401 response: %s", error_body)
+            raise ValueError(
+                f"Invalid OpenWeather API key. Key starts with: {api_key[:8]}... "
+                f"API response: {error_body}"
+            )
         if response.status_code == 404:
             raise ValueError(f"Location not found: {location}")
 
@@ -155,10 +168,10 @@ async def get_weather_forecast(
     including temperature, precipitation probability, wind, and conditions.
     """
     creds = await get_credentials()
-    api_key = creds.get("api_key", "")
+    api_key = (creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or "").strip()
 
     if not api_key:
-        raise ValueError("OpenWeather API key not configured")
+        raise ValueError(f"OpenWeather API key not configured. Keys: {list(creds.keys())}")
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
@@ -171,7 +184,7 @@ async def get_weather_forecast(
         )
 
         if response.status_code == 401:
-            raise ValueError("Invalid OpenWeather API key")
+            raise ValueError(f"Invalid OpenWeather API key. Response: {response.text}")
         if response.status_code == 404:
             raise ValueError(f"Location not found: {location}")
 
@@ -231,10 +244,10 @@ async def geocode_location(
     Returns multiple matches if the query is ambiguous.
     """
     creds = await get_credentials()
-    api_key = creds.get("api_key", "")
+    api_key = (creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or "").strip()
 
     if not api_key:
-        raise ValueError("OpenWeather API key not configured")
+        raise ValueError(f"OpenWeather API key not configured. Keys: {list(creds.keys())}")
 
     # Clamp limit to valid range
     limit = max(1, min(5, limit))
@@ -250,7 +263,7 @@ async def geocode_location(
         )
 
         if response.status_code == 401:
-            raise ValueError("Invalid OpenWeather API key")
+            raise ValueError(f"Invalid OpenWeather API key. Response: {response.text}")
 
         response.raise_for_status()
         data = response.json()
@@ -292,10 +305,10 @@ async def reverse_geocode(
     at or near those coordinates.
     """
     creds = await get_credentials()
-    api_key = creds.get("api_key", "")
+    api_key = (creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or "").strip()
 
     if not api_key:
-        raise ValueError("OpenWeather API key not configured")
+        raise ValueError(f"OpenWeather API key not configured. Keys: {list(creds.keys())}")
 
     # Validate coordinates
     if not -90 <= latitude <= 90:
@@ -318,7 +331,7 @@ async def reverse_geocode(
         )
 
         if response.status_code == 401:
-            raise ValueError("Invalid OpenWeather API key")
+            raise ValueError(f"Invalid OpenWeather API key. Response: {response.text}")
 
         response.raise_for_status()
         data = response.json()
