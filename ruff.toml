@@ -1,3 +1,5 @@
+line-length = 100
+
 [lint]
 select = [
     "E",      # pycodestyle errors
@@ -13,7 +15,4 @@ ignore = [
 ]
 
 [lint.isort]
-known-first-party = ["src"]
-
-[format]
-line-length = 100
+known-first-party = ["openweather"]

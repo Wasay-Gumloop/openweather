@@ -1,5 +1,5 @@
 name: "OpenWeather"
-description: "Uses API key and connects to OpenWeather"
+description: "Get current weather, forecasts, and geocoding data from OpenWeather API"
 icon: "assets/icon.png"
 
 auth:
@@ -9,6 +9,16 @@ auth:
       label: "OpenWeather API Key"
       placeholder: "b2e....."
       secret: true
+
 tools:
-  - name: "example_tool"
-    description: "Example tool demonstrating credential usage"
+  - name: "get_current_weather"
+    description: "Get current weather conditions for a specific location including temperature, humidity, wind, and atmospheric data"
+
+  - name: "get_weather_forecast"
+    description: "Get 5-day weather forecast with 3-hour intervals for a location including temperature, precipitation probability, and conditions"
+
+  - name: "geocode_location"
+    description: "Convert a location name (city, state, country) to geographic coordinates (latitude/longitude)"
+
+  - name: "reverse_geocode"
+    description: "Convert geographic coordinates (latitude/longitude) to location names (city, state, country)"

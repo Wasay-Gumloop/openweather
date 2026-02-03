@@ -1,7 +1,7 @@
 [project]
 name = "openweather"
 version = "0.1.0"
-description = "Uses API key and connects to OpenWeather"
+description = "MCP server for OpenWeather API - current weather, forecasts, and geocoding"
 readme = "README.md"
 requires-python = ">=3.11"
 
@@ -42,3 +42,14 @@ explicit = true
 
 [tool.uv.sources]
 gumstack-mcp = { index = "gumstack" }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.14.10",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

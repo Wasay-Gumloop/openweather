@@ -35,7 +35,7 @@ def load_env():
     if not env_file.exists():
         raise FileNotFoundError(
             f".env file not found at {env_file}\n"
-            "Copy .env.example to .env and fill in your credentials."
+            "Copy env.example to .env and fill in your credentials."
         )
     load_dotenv(env_file)
     return root
@@ -106,9 +106,50 @@ async def test_http():
                 print(f"   - {tool.name}: {tool.description}")
             print()
 
-            # Test the example_tool
-            print("🧪 Testing example_tool...")
-            result = await session.call_tool("example_tool", {"query": "hello world"})
+            # Verify expected tools are present
+            tool_names = {tool.name for tool in tools_response.tools}
+            expected_tools = {
+                "get_current_weather",
+                "get_weather_forecast",
+                "geocode_location",
+                "reverse_geocode",
+            }
+            assert expected_tools.issubset(
+                tool_names
+            ), f"Missing tools: {expected_tools - tool_names}"
+            print("✅ All expected tools are registered\n")
+
+            # Test get_current_weather
+            print("🧪 Testing get_current_weather...")
+            result = await session.call_tool(
+                "get_current_weather", {"location": "London,UK", "units": "metric"}
+            )
+            print(f"   Result: {result.content}")
+            print()
+
+            # Test get_weather_forecast
+            print("🧪 Testing get_weather_forecast...")
+            result = await session.call_tool(
+                "get_weather_forecast", {"location": "Paris,FR", "units": "metric"}
+            )
+            print(f"   Result type: {type(result.content)}")
+            print(f"   Got forecast data")
+            print()
+
+            # Test geocode_location
+            print("🧪 Testing geocode_location...")
+            result = await session.call_tool(
+                "geocode_location", {"query": "New York, US", "limit": 3}
+            )
+            print(f"   Result: {result.content}")
+            print()
+
+            # Test reverse_geocode
+            print("🧪 Testing reverse_geocode...")
+            result = await session.call_tool(
+                "reverse_geocode",
+                {"latitude": 40.7128, "longitude": -74.0060, "limit": 1},
+            )
             print(f"   Result: {result.content}")
             print()
 

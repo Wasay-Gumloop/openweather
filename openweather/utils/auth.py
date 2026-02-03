@@ -4,7 +4,6 @@ import os
 
 from mcp.gumstack import get_credentials as gumstack_get_credentials
 
-
 # Provider name constant for use with get_credentials()
 PROVIDER_NAME = "credentials"
 
