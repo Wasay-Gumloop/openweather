@@ -7,7 +7,7 @@ import httpx
 from dotenv import load_dotenv
 from mcp.gumstack import GumstackHost
 from mcp.server.fastmcp import FastMCP
-from pydantic import Field
+from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -24,6 +24,18 @@ from openweather.models import (
     Wind,
 )
 from openweather.utils.auth import get_credentials
+
+
+class DiagnosticResult(BaseModel):
+    """Result of API diagnostic check."""
+
+    api_key_length: int = Field(description="Length of the API key")
+    api_key_preview: str = Field(description="First 8 characters of API key")
+    api_key_hex_preview: str = Field(description="Hex representation of first 16 chars")
+    test_url: str = Field(description="URL used for testing")
+    response_status: int = Field(description="HTTP status code from OpenWeather")
+    response_body: str = Field(description="Response body from OpenWeather")
+    success: bool = Field(description="Whether the API call succeeded")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,7 +107,7 @@ async def get_current_weather(
     """
     creds = await get_credentials()
     logger.info("Credentials received: %s", {k: f"{v[:8]}..." if v else "empty" for k, v in creds.items()})
-    
+
     # Try multiple possible key names
     api_key = creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or ""
     api_key = api_key.strip()  # Remove any whitespace
@@ -107,15 +119,22 @@ async def get_current_weather(
 
     logger.info("Using API key: %s...", api_key[:8] if len(api_key) >= 8 else api_key)
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{WEATHER_API_BASE}/weather",
-            params={
-                "q": location,
-                "appid": api_key,
-                "units": units,
-            },
-        )
+    # Ensure units is a string (handle potential Field object issue)
+    if not isinstance(units, str):
+        units = "metric"
+
+    request_url = f"{WEATHER_API_BASE}/weather"
+    request_params = {
+        "q": location,
+        "appid": api_key,
+        "units": units,
+    }
+    logger.info("Making request to %s with params: q=%s, units=%s", request_url, location, units)
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(request_url, params=request_params)
+
+        logger.info("Response status: %d", response.status_code)
 
         if response.status_code == 401:
             error_body = response.text
@@ -360,6 +379,37 @@ async def reverse_geocode(
         longitude=longitude,
         results_count=len(locations),
         locations=locations,
+    )
+
+
+@mcp.tool()
+async def diagnose_api_key() -> DiagnosticResult:
+    """
+    Diagnose API key configuration and connectivity.
+
+    Tests the OpenWeather API connection and returns detailed diagnostic
+    information to help troubleshoot authentication issues.
+    """
+    creds = await get_credentials()
+    api_key = (creds.get("api_key") or creds.get("API_KEY") or creds.get("apiKey") or "").strip()
+
+    # Get hex representation to check for invisible characters
+    hex_preview = api_key[:16].encode().hex() if api_key else "empty"
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{WEATHER_API_BASE}/weather",
+            params={"q": "London", "appid": api_key, "units": "metric"},
+        )
+
+    return DiagnosticResult(
+        api_key_length=len(api_key),
+        api_key_preview=api_key[:8] + "..." if len(api_key) >= 8 else api_key,
+        api_key_hex_preview=hex_preview,
+        test_url=f"{WEATHER_API_BASE}/weather?q=London&units=metric&appid=***",
+        response_status=response.status_code,
+        response_body=response.text[:500],
+        success=response.status_code == 200,
     )
 
 

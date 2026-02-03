@@ -22,3 +22,6 @@ tools:
 
   - name: "reverse_geocode"
     description: "Convert geographic coordinates (latitude/longitude) to location names (city, state, country)"
+
+  - name: "diagnose_api_key"
+    description: "Diagnose API key configuration and test connectivity to OpenWeather API"
